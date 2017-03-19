@@ -78,3 +78,30 @@ for (let die = 0; die < hand.length; die++) {
 }
 funds = funds + winnings;
 ```
+
+## JavaScript的控制流程陳述式
+
+控制流程分兩個類別：
+
+- 條件型(or 分支型)
+
+    - `if`
+    - `if...else`
+    - `switch`
+
+- 迴圈型
+
+    - `while`
+    - `do...while`
+    - `for`
+
+###  流程控制例外
+
+四種陳述式會改變控制流程的正常程序，可視為控制流程的“王牌”：
+
+- `break`
+- `continue`
+- `return`
+- `throw`
+
+### 串連if...else陳述式
