@@ -105,3 +105,5 @@ funds = funds + winnings;
 - `throw`
 
 ### 串連if...else陳述式
+
+### 超語法
