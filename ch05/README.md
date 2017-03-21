@@ -296,10 +296,118 @@ console.log(`Number greater than 10 found: ${n}.`);
 console.log(`${nums.length} numbers remain.`);
 ```
 
-除一般運算子，還有方便的賦值運算子可在同一步驟執行願算與賦值。
+除一般運算子，還有方便的賦值運算子可在同一步驟執行運算與賦值。
 
 ```
 x+=y
 x-=y
 ...
+```
+
+### 解構賦值
+
+ES6新功能，可將一個物件或陣列“解構”成各種變數。
+
+```
+const obj = { b: 2, c:3, d:4 };
+const {a, b, c} = obj;
+a; // undefined
+b; // 2
+c; // 3
+d; // Uncaught ReferenceError: d is not defined
+```
+
+解構物件，變數名稱必須符合物件中的特性名稱(陣列解構只能指派識別碼特性名稱)。
+
+上述是同一陳述式進行宣告與賦值。若僅作賦值需要用括號包起來。
+
+```
+const obj = { b: 2, c: 3, d: 4 };
+let a, b, c;
+
+{a, b, c} = obj; // 會產生錯誤，JavaScript會將左邊視為區塊
+
+({a, b, c} = obj); // 這可以動作
+```
+
+使用陣列解構，可指派任何想要名稱(按順序)給陣列元素：
+
+```
+const arr = [1, 2, 3];
+
+let [x, y] = arr;
+x; // 1
+y; // 2
+z; // 錯誤，沒有被定義
+```
+
+也可用**擴張運算子**，將其餘的所有元素放入一個新陣列：
+
+```
+const arr = [1, 2, 3, 4, 5];
+
+let [x, y, ...rest] = arr;
+x;    // 1
+y;    // 2
+rest; // [3, 4, 5]
+```
+
+陣列解構可以讓你輕鬆的交換變數值(之前需要用到暫時變數)。
+
+```
+let a = 5, b = 10;
+[a, b] = [b, a];
+a; // 10
+b; // 5
+```
+
+當物件或陣列是從其他地方取得，解構就很方便，它可輕易挑出某些元素。
+
+### 物件與陣列運算子
+
+| 運算子     | 說明             |
+|------------|------------------|
+| .          | 成員存取         |
+| []         | 計算成員存取     |
+| in         | 特性存在運算子   |
+| new        | 物件實例化運算子 |
+| instanceof | 原型鏈測試運算子 |
+| ...        | 擴張運算子       |
+| delete     | 刪除運算子       |
+
+### 樣板字串中的運算式
+
+樣板字串可用來將**任何運算式**的值注入字串。
+
+```
+const roomTempC = 21.5;
+let currentTempC = 19.5;
+const message = `The current temperature is ` +
+    `${currentTemp - roomTempC}\u00b0C different than room temperature.`;
+const fahrenheit =
+    `The current temperature is ${currentTempC * 9/5 + 32}\u00b0F`;
+```
+
+我們可在樣板字串中使用變數，因為**變數是運算式**的型態。
+
+### 運算式與控制流程模式
+
+目前已看到有些運算式會影響控制流程(**三元運算式**與**短路計算**)。
+
+#### 將if...else陳述式轉成條件運算式
+
+如果用`if...else`陳述式來求出一個值，無論是賦值的一部分、運算式的一部分，或被用來回傳函式的值，通常用條件運算式(`(truthy:falsy)?A:B`)來取代`if...else`會比較好，因這可以產生更扎實的程式，更容易閱讀。
+
+#### 將if陳述式轉換成短路邏輯OR運算式
+
+求值的if陳述式可輕鬆改為短路邏輯OR運算式：
+
+```
+if (!options) options = {}
+```
+
+轉換成：
+
+```
+options = options || {};
 ```
