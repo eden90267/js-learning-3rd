@@ -358,3 +358,62 @@ greet();
 greet.call(bruce);    // "Hello, I'm Bruce"
 greet.call(madeline); // "Hello, I'm Madeline"
 ```
+
+`call`第一個引數是你想綁定`this`的值，其餘的引數會變成你要呼叫函式的引數：
+
+```
+function update(birthYear, occupation) {
+  this.birthYear = birthYear;
+  this.occupation = occupation;
+}
+
+update.call(bruce, 1949, 'singer'); // { name: "Bruce", birthYear: 1949, occupation: "singer" }
+update.call(madeline, 1942, 'actress'); // { name: "Madeline", birthYear: 1942, "actress"}
+```
+
+`apply`與`call`一樣，但處理的引數方式不一樣。`call`會直接使用引數，與一般的函式一樣。`apply`會**以陣列的形式處理它的引數**：
+ 
+```
+update.apply(bruce, [1955, "actor"]); // {name: "Bruce", birthYear: 1955, occupation: "actor"}
+update.apply(madeline, [1918, "writer"]); // {name: "Madeline", birthYear: 1918, occupation: "writer"}
+```
+
+如有一個陣列，且想要用它的值當函式引數，很適合使用`apply`。 尋找陣列中最小與最大數字是一種典型的案例。如：
+ 
+- `Math.min`
+- `Math.max`
+
+```
+const arr = [2, 3, -5, 15, 7];
+Math.min.apply(null, arr);
+Math.max.apply(null, arr);
+```
+
+使用ES6的擴張運算子(...)，可以得到跟apply一樣的結果：
+
+```
+const newBruce = [1940, "martial artist"];
+update.call(bruce, ...newBruce); // 與 apply(bruce, newBruce) 等效
+Math.min(...arr); // -5
+Math.max(...arr); // 15
+```
+
+還有最後一個函式可以讓你指定`this`的值：`bind`。`bind`可以讓你**永遠**將一個函式指派給`this`。
+
+確保`update`被呼叫時，`this`一定代表`bruce`，無論怎麼被呼叫(就算使用call、apply或其他的bind)。
+
+```
+const updateBruce = update.bind(bruce);
+
+updateBruce(1904, "actor"); // {name: "Bruce", birthYear: 1904, occupation: "actor"}
+updateBruce.call(madeline, 1274, "king"); // {name: "Bruce", birthYear: 1274, occupation: "king"}
+```
+
+`bind`的行為是永遠不變的，所以很容易造成難以發現的bug。本質上來說，你會留下一個無法有效地使用`call`、`apply`或`bind`(第二次)的函式。想像一下，若要四處傳遞一個函式，有人在遠方使用`call`或`apply`來呼叫它，滿心期待`this`會綁定他認為的對象...所以，沒有說不能使用`bind`，`bind`很好用，但請留心別人會怎麼使用被綁定的函式。
+
+也可在`bind`中提供參數，這會建立一個新函式，且這函式被呼叫時，永遠會使用特定的參數。
+
+```
+const updateBruce1949 = update.bind(bruce, 1949);
+updateBruce1949("singer, songwriter"); // { name: "Bruce", birthYear: 1949, occupdation: "singer, songwriter" }
+```
