@@ -226,3 +226,135 @@ speak();           // "My name is !"
 JavaScript不知道函式是在o裡面宣告的，所以this會被綁定undefined。
 
 如果函式沒有用到this，我們通常會將它稱為函式，無論它被宣告的地方在哪。
+
+```
+const o = {
+  name: 'Julie',
+  greetBackWards: function() {
+    function getReverseName() {
+      let nameBackwards = '';
+      for (let i = this.name.length - 1; i >= 0; i--) {
+        nameBackwards += this.name[i];
+      }
+      return nameBackwards;
+    }
+    return `${getReverseName()} si eman ym, olleH`;
+  },
+};
+o.greetBackWards(); // TypeError: Cannot read property 'length' of undefined
+```
+
+呼叫o.greetBackWards()時，JavaScript會一如預期綁定this，但greetBackWords裡面呼叫getReverseName時，this會被綁到其他東西(全域物件 or undefined)。若要解決，常見作法是將第二變數指派給this。
+
+```
+const o = {
+  name: 'Julie',
+  greetBackWards: function() {
+    const self = this;
+    function getReverseName() {
+      let nameBackwards = '';
+      for (let i = self.name.length - 1; i >= 0; i--) {
+        nameBackwards += self.name[i];
+      }
+      return nameBackwards;
+    }
+    return `${getReverseName()} si eman ym, olleH`;
+  },
+};
+o.greetBackWards();
+```
+
+箭頭函式是解決這問題的方式。
+
+## 函式運算式與匿名函式
+
+匿名函式。我們知道運算式會求出一個值，函式是一種值。函式運算式只是一種宣告(或許未命名)函式的方式。你可將函式運算式指派給某一個東西(因而給他一個識別碼)，或立刻呼叫它(IIFE)。
+
+函式運算式的語法與宣告函式一樣，只不過可以省略函式名稱。
+
+```
+const f = function() {
+  // ...
+}
+```
+
+匿名函式很常見，它會被當成其他函式或方法的引數，或用來建立物件中的函式特性。
+
+函式運算式中，函式名稱是**選用的**...，當賦與函式名稱+將它指派給一個變數
+
+```
+const g = function f() {
+  ...
+}
+```
+
+當用這種方式建立函式，名稱g會被採用，要參考函式(從函式外面)，應使用g；當試著使用f，會看到未定義變數的錯誤。
+
+如果想從函式裡面參考函式本身(遞迴)，就須採用這種作法：
+
+```
+const g = function f(stop) {
+  if (stop) console.log('f stopped');
+  f(true);
+};
+g(false);
+```
+
+## 箭頭標記法
+
+箭頭標記法，也稱為肥箭頭(因為箭頭是等號而非破折號)。它是糖衣語法，減少輸入function這個字的次數，以及大括號的數量。
+
+- 省略function字
+- 如果函式只有一個引數，可省略括號
+- 如果函式只有一個運算式，可以省略大括號與return陳述式
+
+```
+const f1 = () => "hello!";
+const f2 = name => `Hello, ${name}!`;
+const f3 = (a, b) => a + b;
+```
+
+需要一個有名稱的函式，可直接用一班的函式宣告方法；當要建立並傳遞匿名函式，箭頭函式最實用。
+
+箭頭函式與一般函式最主要差異：this會用語彙(lexicallu)來綁定，與其他所有變數一樣。
+
+```
+const o = {
+  name: 'Julie',
+  greetBackWards: function() {
+    const getReverseName = () => {
+      let nameBackwards = '';
+      for (let i = this.name.length - 1; i >= 0; i--) {
+        nameBackwards += this.name[i];
+      }
+      return nameBackwards;
+    }
+    return `${getReverseName()} si eman ym, olleH`;
+  },
+};
+o.greetBackWards();
+```
+
+箭頭函式與一般函式還有兩個細微區別：
+
+- 它們不能當成物件建構式來使用
+- 箭頭函式不能使用特殊的**arguments**變數(因有擴張運算子的關係，它已非必要了)
+
+## call、apply與bind
+
+已見過"常見"的綁定this方式。但JavaScript可讓你指定要綁定的東西，包括要如何呼叫函式，以及要呼叫哪裡的函式。
+
+`call`，所有函式都可使用的方法，可讓你用特定的this值來呼叫函式。
+
+```
+const bruce = { name: "Bruce" };
+const madeline = { name: "Madeline" };
+
+function greet() {
+  return `Hello, I'm ${this.name}!`;
+}
+
+greet();
+greet.call(bruce);    // "Hello, I'm Bruce"
+greet.call(madeline); // "Hello, I'm Madeline"
+```
