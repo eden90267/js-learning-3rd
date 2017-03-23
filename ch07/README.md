@@ -149,4 +149,172 @@ console.log(typeof x); // "undefined"
 
 ## 函式、Closure與語彙範圍
 
-故意定義一個具有特定範圍的函式，明確地讓它只能在那個範圍內使用。這通常稱closure。
+故意定義一個具有特定範圍的函式，明確地讓它只能在那個範圍內使用。這通常稱closure(函式周圍關閉範圍)。
+
+```
+let globalFunc;
+{
+  let blockVar = 'a';
+  globalFunc = function() {
+    console.log(blockVar);
+  }
+}
+globalFunc();                // "a"
+```
+
+JavaScript發現在那個範圍裡面有一個函式被定義了(而且你可以在該範圍外面參考那個函式)，因此它必須保留那一個範圍。
+
+closure**也可以**讓我們存取一般無法存取的東西：
+
+```
+let f;
+{
+  let o = { note: 'Safe' };
+  f = function() {
+    return o;
+  }
+}
+let oRef = f();
+oRef.note = "Not so safe after all!";
+```
+
+## 立即呼叫函式運算式
+
+IIFE會宣告一個運算式，接著立刻執行它。
+
+```
+(function() {
+  // 這是IIFE本文
+})();
+```
+
+IIFE優點是，在它裡面的任何東西都有它自己的範圍，而且因為它是個函式，所以可以將某些東西傳出範圍。
+
+```
+const message = (function() {
+  const secret = "I'm a secret!"; // 在IIFE範圍內是安全的
+  return `The secret is ${secret.length} characters long.`;
+})();
+console.log(message);
+```
+
+IIFE經常回傳陣列、物件與函式。
+
+考慮這個函式，它可以回傳它被呼叫的次數，且次數不會被竄改。
+
+```
+const f = (function() {
+  let count = 0;
+  return function() {
+    return `I have been called ${++count} time(s).`;
+  };
+})();
+f(); // I have been called 1 time(s).
+f(); // I have been called 2 time(s).
+// ...
+```
+
+雖ES6的區塊範圍變數在某種程度上可減少對IIFE的依賴，但IIFE仍然很常見，且當你想要建立一個closure，並將某個東西傳出去時，它是很實用的。
+
+## 函式範圍與懸掛
+
+在ES6加入let之前，變數用var來宣告的，而且有一種東西叫做**函式範圍**(全域變數是用var宣告的)。
+
+當你用let宣告變數，他不會在被宣告的地方之前出現。當你用var宣告變數，它可以在**目前範圍內的任何地方**使用，甚至在它被宣告之前。
+
+```
+let var1;
+let var2 = undefined;
+var1;                 // undefined
+var2;                 // undefined
+undefinedVar;         // ReferenceError: notDefined is not defined
+```
+
+使用let，如果你試著在宣告變數前使用，會產生錯誤：
+
+```
+x;         // ReferenceError: x is not defined
+let x = 3;
+```
+
+但, 使用var宣告變數，可在它們被宣告的地方之前使用它們。
+
+```
+x;         // undefined
+var x = 3;
+x;         // 3
+```
+
+使用var宣告變數，是採用一種稱為**懸掛**(hoisting)的機制。JavaScript會掃描整個範圍(函式或全域範圍)，任何用var宣告的變數都會被懸掛在最上面。重點在於，只有宣告式會被懸掛，**賦值式不會**。
+
+```
+var x; // 宣告(但賦值沒有)被懸掛
+x;     // undefined
+x = 3;
+x;     // 3
+```
+
+你寫的程式：
+
+```
+if(x !== 3) {
+  console.log(y);
+  var y = 5;
+  if (y === 5) {
+    var x = 3;
+  }
+  console.log(y);
+}
+if(x === 3) {
+  console.log(y);
+}
+```
+
+JavaScript解讀方式：
+
+```
+var x;
+var y;
+if(x !== 3) {
+  console.log(y);
+  y = 5;
+  if (y === 5) {
+    x = 3;
+  }
+  console.log(y);
+}
+if(x === 3) {
+  console.log(y);
+}
+```
+
+在宣告變數之前使用它們，會產生沒必要的疑惑，而且容易出錯。
+
+關於使用var來宣告變數，還有一件事情：JavaScript不在乎你是否重複定義變數。
+
+```
+var x = 3
+if (x === 3) {
+  var x = 2;
+  console.log(x); // 2
+}
+console.log(x);   // 2
+```
+
+JavaScript解讀方式：
+
+```
+var x;
+x = 3;
+if (x === 3) {
+  x = 2;
+  console.log(x);
+}
+console.log(x);
+```
+
+var可用來建立新變數，且**變數不會像let一樣被覆蓋**。
+
+新的變數x在if陳述式區塊會形成，但事實並非如此，整個程式只有一個x變數。
+
+所以，可以了解為什麼會有let了。
