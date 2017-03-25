@@ -1,6 +1,103 @@
-前面待捕....
+# 陣列與陣列處理
+
+JavaScript流暢的陣列方法可以輕鬆處理資料集合的問題。
+
+## 回顧陣列
+
+- 本質上有序
+- 索引從零開始
+- 元素可非同型
+- 常值陣列用方括號建構
+- 可用方括號與索引來存取元素
+- 陣列有length特性
+- 陣列會自動變大
+- 未使用的索引會有undefined值
+- 可使用Array建構子來建構陣列(不常見)
+
+```
+// 陣列常值
+const arr1 = [1, 2 ,3];
+const arr2 = ["one", 2, "three"];
+const arr3 = [[1 ,2, 3], ["one", 2, "three"]];
+const arr4 = [
+  {name: "Fred", type: "object", luckyNumbers: [5, 7, 13]},
+  [
+    {name: "Susan", type: "object"},
+    {name: "Anthony", type: "object"}
+  ],
+  1,
+  function() {return "arrays can contain functions too";},
+  "three",
+];
+
+// 存取元素
+arr1[0];
+arr1[2];
+arr3[1];
+arr4[1][0];
+
+// 陣列長度
+arr1.length;
+arr4.length;
+arr4[1].length;
+
+// 增加陣列大小
+arr1[4] = 5;
+arr1;
+arr1.length;
+
+// 存取(不是指派)比陣列大的索引，"不會"改變陣列大小
+arr2[10];
+arr2.length;
+
+// Array建構式(很少用)
+const arr5 = new Array();        // 空陣列
+const arr6 = new Array(1, 2, 3); // [1, 2, 3]
+const arr7 = new Array(2);       // 長度為2的陣列(all元素都是undefined)
+const arr8 = new Array("2");     // ["2"]
+```
+
+## 操作陣列內容
+
+陣列方法之所以讓人難懂，有一個原因是"就地"修改陣列的方法與回傳新陣列的方法之間的差異。這沒有一定規則，這是唯一需要記的東西。(e.g. `push`會就地修改陣列，但`concat`會回傳一個新陣列)。
+
+### 在開頭或結尾處添加或移除一個元素
+
+- `push`與`pop`：陣列結尾加入與移除(就地)元素。
+- `shift`與`unshift`：陣列開頭移除與加入(就地)元素。
+
+這些方法名稱來自電腦科學術語。`push`與`pop`是針對**堆疊**做的動作，堆疊中，最重要的元素是最後被加入的那一個。`shift`與`unshift`是將陣列視為**佇列**，佇列最重要的元素是最早被加入的那一個。
+
+`push`與`unshift`會在加入新元素之後回傳陣列的**最新長度**，而`pop`與`shift`會回傳**被移除的元素**。
+
+```
+const arr = ["b", "c", "d"];
+arr.push("e");    // 4
+arr.pop();        // "e"
+arr.unshift("a"); // 4
+arr.shift();      // "a"
+```
+
+### 在結尾處加入多個元素
+
+`concat`方法可在結尾處加入多個元素，並**回傳複本**。如果你將陣列傳入`concat`，**它會拆開這些陣列**，並將他們的元素加入原本的陣列。
+
+```
+const arr = [1, 2, 3];
+arr.concat(4, 5, 6);    // [1, 2, 3, 4, 5, 6]，arr未被修改
+arr.concat([4, 5, 6]);  // [1, 2, 3, 4, 5, 6]，arr未被修改
+arr.concat([4, 5], 6);  // [1, 2, 3, 4, 5, 6]，arr未被修改
+arr.concat([4, [5, 6]]);// [1, 2, 3, 4, [5, 6]]，arr未被修改
+```
 
 ### 取得子陣列
+
+如果想取得某個陣列的子陣列，可使用`slide`。`slide`有兩個引數：
+
+- 子陣列開始的地方
+- 子陣列結束的地方(不含指定字元)
+
+如果忽略結束引數，它會回傳字串結尾之前的元素。這種方法可以負索引來指出從字串結尾算回去的元素。
 
 ```
 const arr = [1, 2, 3, 4, 5];
@@ -138,4 +235,64 @@ const arr = [1, 17, 16, 5, 4, 16, 10, 3, 49];
 arr.find((x, i) => i > 2 && Number.isInteger(Math.sqrt(x))); // 4
 ```
 
+find與findIndex也可以指定this變數在呼叫函式過程中的值。如果你想呼叫一個函式，就像它是個物件的方法。
 
+```
+class Person {
+    constructor(name) {
+        this.name = name;
+        this.id = Person.nextId++;
+    }
+}
+
+Person.nextId = 0;
+const jamie = new Person("Jamie"),
+    juliet = new Person("Juliet"),
+    peter = new Person("Peter"),
+    jay = new Person("Jay");
+const arr = [jamie, juliet, peter, jay];
+
+// 選項1：直接比較ID
+arr.find(p => p.id === juliet.id); // {name: "Juliet", id: 1}
+
+// 選項2：使用“this”引數
+arr.find((p) => p.id === this.id, juliet); // 回傳undefined
+// arrow function會自動綁定this(這裡是window物件)，導致失效，所以改寫以下正常：
+arr.find(function(p) { return p.id === this.id; }, juliet); // {name: "Juliet", id: 1}
+```
+
+不在乎陣列的元素索引，也不在乎索引或元素本身，只想知道它是否存在。顯然可使用之前的函式來檢查它會回傳-1或null，看JavaScript提供兩個程式做這件事：`some`與`every`
+
+`some`找到第一個，就不找了，回傳true否false：
+
+```
+const arr = [5, 7, 12, 15, 17];
+arr.some(x => x%2===0);                        // true，12是偶數
+arr.some(x => Number.isInteger(Math.sqrt(x))); // false，沒有平方值
+```
+
+如果陣列每一個元素都符合條件，`every`會回傳true，否則false。`every`有一個false就會停止。
+
+```
+const arr = [4, 6, 16, 36];
+arr.every(x => x%2===0);                        // true
+arr.every(x => Number.isInteger(Math.sqrt(x))); // false，6不是平方數
+```
+
+`find`、`findIndex`、`some`、`every`都可接受第二個引數，可指定函式被呼叫時，`this`的值為何。
+
+## 基本陣列操作：map與filter
+
+在所有陣列操作中，做實用的是`map`與`filter`。
+
+`map`可**轉換**陣列元素。**如果你的陣列屬於某一種格式，但你需要另一種格式，可使用map**。`map`與`filter`都會回傳複本，不會修改原始陣列。
+
+```
+const cart = [{name: "Widget", price: 9.95}, {name:"Gadget", price: 22.95}];
+const names = cart.map(x => x.name);           // ["Widget", "Gadget"]
+const prices = cart.map(x => x.price);         // [9.95, 22.95]
+const discountPrices = prices.map(x => x*0.8); // [7.96, 18.36]
+const lcNames = names.map(String.toLowerCase); // error，要用以下的方式處理
+// names.map(Function.prototype.call, String.prototype.toLowerCase);
+// map(callback, thisArgs)
+```
