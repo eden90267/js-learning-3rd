@@ -285,6 +285,8 @@ arr.every(x => Number.isInteger(Math.sqrt(x))); // false，6不是平方數
 
 在所有陣列操作中，做實用的是`map`與`filter`。
 
+### map
+
 `map`可**轉換**陣列元素。**如果你的陣列屬於某一種格式，但你需要另一種格式，可使用map**。`map`與`filter`都會回傳複本，不會修改原始陣列。
 
 ```
@@ -296,3 +298,160 @@ const lcNames = names.map(String.toLowerCase); // error，要用以下的方式�
 // names.map(Function.prototype.call, String.prototype.toLowerCase);
 // map(callback, thisArgs)
 ```
+
+
+使用既有的函式`String.toLowerCase`，該函式接收一個字串引數，並回傳小寫的字串。暸解”函式就是函式，無論它的形式為何“。
+
+map傳入的函式被呼叫時，提供三個引數來處理元素：
+
+- 元素本身
+- 元素索引
+- 陣列本身(很少用到)
+
+兩個不同陣列結合：
+
+```
+const items = ["Widget", "Gadget"];
+const prices = [9.95, 22.95];
+const cart = items.map((x, i) => ({name: x, price: prices[i]}));
+// cart: [{ name: "Widget", price: 9.95 }, { name: "Gadget", price: 22.95 }]
+```
+
+必須將return物件用括號包起來，不然arrow function會將大括號視為區塊標示。
+
+### filter
+
+移除陣列中不想要的東西。也是回傳一個已移除元素的新陣列。
+
+```
+const cards = [];
+for (let suit of ['H', 'C', 'D', 'S'])
+  for (let value=1; value<=13; value++)
+    cards.push({suit, value});
+
+// 取得所有數字2的牌
+cards.filter(c => c.value === 2);
+
+// 取得所有鑽石
+cards.filter(c => c.suit === 'D');
+
+// 取得所有臉牌
+cards.filter(c => c.value > 10);
+
+// 取得所有紅心臉牌
+cards.filter(c => c.suit === 'H' && c.value > 10);
+```
+
+map與filter組合：
+
+想用短字串來表示卡牌。用Unicode代表花色，並使用“A”、“J”、“Q”與“K”來代表ace與臉牌。
+
+```
+function cardToString(c) {
+    const suits = { 'H': '\u2665', 'C': '\u2663', 'D': '\u2666', 'S': '\u2660' };
+    const values = { 1: 'A', 11: 'J', 12: 'Q', 13: 'K' };
+    for (let i = 2; i <= 10) values[i] = i;
+    return values[c.value] + suits[c.suit];
+}
+
+// 取得所有數字2的牌
+cards.filter(c => c.value === 2).map(cardToString); // ["2♥", "2♣", "2♦", "2♠"]
+
+// 取得所有紅心臉牌
+cards.filter(c => c.suit === 'H' && c.value > 10).map(cardToString); // ["J♥", "Q♥", "K♥"]
+```
+
+## 陣列魔法：reduce
+
+所有陣列方法中，作者最喜歡的是`reduce`。
+
+`map`會轉換陣列的每一個元素，但`reduce`會轉換整個陣列。
+
+`reduce`通常會用來將陣列精簡為一個值，例如：加總陣列的數字，或計算平均值，都是將陣列精簡為一個值的方式。但，`reduce`提供的單值可以是物件或另一個陣列，所以`reduce`也有`map`與`filter`的功能(或討論過的所有其他陣列函式)。
+
+`reduce`傳入的控制結果的函式：
+
+- 第一個引數：**累加器**，陣列要被精簡的東西
+- 第二、三、四個引數：目前的陣列元素、目前的索引、與陣列本身。
+
+reduce除了接收回呼之外，也可接收(選用)**累加器的初始值**。
+
+```
+const arr = [5, 7, 2, 4];
+const sum = arr.reduce((a, x) => a += x, 0); // 18
+```
+
+省略初始值，a的初始值就會是第一個元素值，然後使用**第二個**陣列元素來呼叫函式。
+
+可看到它少一個步驟，但結果是一樣的。所以這有省略初始值的好處。
+
+```
+arr.reduce((a, x) => a += x);
+```
+
+`reduce`經常使用原子(atomic)值(數字或字串)當成累積器的值。但將物件當成累積器來使用是憂種非常強大的方法(且經常被忽視)。
+
+e.g. 有字串陣列，而且想將字串分成字母陣列(A開頭單字、B開頭單字等等)，可使用物件：
+
+```
+const words = ["Beachball", "Rodeo", "Angel",
+    "Aardvark", "Xylophone", "November", "Chocolate",
+    "Papaya", "Uniform", "Joker", "Clover", "Bali"
+];
+const alphabetical = words.reduce((a, x) => {
+	if (!a[x[0]]) a[x[0]] = [];
+	a[x[0]].push(x);
+	return a; // 記得回傳的值會被當成陣列的下一個元素的累積器
+}, {});
+```
+
+e.g. 計算統計數據。若要計算資料集的平均值與變分：
+
+```
+const data = [3.3, 5, 7.2, 12, 4, 6, 10.3];
+const stats = data.reduce((a, x) => {
+	a.N++;
+	let delta = x - a.mean;
+	a.mean += delta/a.N;
+	a.M2 += delta*(x - a.mean);
+    return a;
+}, {N:0, mean: 0, M2: 0});
+if (stats.N > 2) {
+	stats.variance = stats.M2 / (stats.N -1);
+	stats.stdev = Math.sqrt(stats.variance);
+}
+```
+
+可使用物件當累積器，因為需要多個變數(`mean`與`M2`；必要的話，我們可以使用索引引數(負一)來取代N)。
+
+```
+const words = ["Beachball", "Rodeo", "Angel",
+    "Aardvark", "Xylophone", "November", "Chocolate",
+    "Papaya", "Uniform", "Joker", "Clover", "Bali"
+];
+const longWords = words.reduce((a, w) => w.length>6?a+" "+w:a, "").trim();
+// "Beachball Aardvark Xylophone November Chocolate Uniform"
+```
+
+下面為filter與join來取代reduce：
+
+```
+words.filter(x => x.length > 6).join(' ');
+// "Beachball Aardvark Xylophone November Chocolate Uniform"
+```
+
+`reduce`的威力，在所有陣列方法中，他是最通用且最強大的一個。
+
+## 陣列方法，與已被刪除或從未定義的元素
+
+關於從未被定義或已經被刪除的元素，有一種Array行為經常會讓人犯錯。`map`、`filter`與`reduce`**不會為從未被賦值或已被刪除的元素呼叫函式**。
+
+e.g. 在ES6之前，用下列方式初始化一個陣列：
+
+```
+const arr = Array(10).map(function(x) { return 5; });
+```
+
+arr仍然是個有10個元素的陣列，裡面全部都是undefined。
+
+同樣，如果刪除一個陣列中間的元素，接著呼叫map，會得到一個有“洞”的陣列。
