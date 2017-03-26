@@ -202,3 +202,71 @@ const Car = (function () {
 
 使用立即呼叫的函式運算式，將`WeakMap`藏一個`closure`裡面，讓它不被外面的世界存取。
 
+### 類別即函式
+
+`class`語法只是加入一些糖衣語法，JavaScript類別的性質並沒有改變。
+
+類別其實是一種函式。ES5可這樣製作Car：
+
+```
+function Car(make, model) {
+  this.make = make;
+  this.model = model;
+  this._userGears = ['P', 'N', 'R', 'D'];
+  this._userGear = this._userGears[0];
+}
+```
+
+確認`class`是糖衣語法：
+
+```
+class Es6Car {}
+function Es5Car() {}
+typeof Es6Car; // "function"
+typeof Es5Car; // "function"
+```
+
+### 原型
+
+當你參考類別的實例方法時，你參考的其實是**原型**(prototype)方法。
+
+```
+Car.prototype.shift;
+Array.prototype.forEach;
+```
+
+每種**函式**都有一種特殊特性，叫做`prototype`。一般函式不會用到原型，但它對扮演物件建構式的函式而言非常重要。
+
+新建立的物件可以存取它的建構式的`prototype`物件。物件實例會將它存在它的`__proto__`特性裡面。
+
+`__proto__`特性被視為JavaScript管路系統之一，所有前後使用雙底線的特性都是如此。沒有非常暸解JavaScript之前，建議看看特性就好，不要碰。
+
+關於原型，有一重要機制：動態指派(“指派”是呼叫方法的另一種說法)。存取某物件的特性或方法，如果不存在，**JavaScript就會檢查物件的原型**，看他有沒有在那裡。
+
+同一類別的所有實例都會使用同一原型，若原型有特性與方法，該類別所有實例都可存取。
+
+在類別的原型中設定資料特性通常沒效果。任何實例去更改原型的資料特性，那個值會設為實例的值，而非原型。這會有困擾與bug。如果想讓所有實例都有一個初始的資料值，最好在建構式中設定它們。
+
+注意，在實例中定義方法或特性，將會改寫原型的版本。JavaScript先檢查實例再原型。
+
+```
+const car1 = new Car();
+const car2 = new Car();
+
+car1.shift === Car.prototype.shift; // true
+car1.shift('D');
+car1.shift('d');                    // 錯誤
+car1.userGear;                      // 'D'
+car1.shift = car2.shift;            // true
+
+car1.shift = function(gear) {
+    this.userGear = gear.toUpperCase();
+}
+car1.shift === Car.prototype.shift; // false
+car1.shift === car2.shift;          // false
+car1.shift('d');
+car1.userGear;                      // 'D'
+```
+
+### 靜態方法
+
