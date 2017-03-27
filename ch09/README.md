@@ -270,3 +270,208 @@ car1.userGear;                      // 'D'
 
 ### 靜態方法
 
+不在特定的實例上使用，而是在類別本身。
+
+用來執行與整個類別有關的工作。
+
+```
+class Car {
+    static getNextVin() {
+        return Car.nextVin++;
+    }
+
+    constructor(make, model) {
+        this.make = make;
+        this.model = model;
+        this.vin = Car.getNextVin();
+    }
+
+    static areSimilar(car1, car2) {
+        return car1.make === car2.make && car1.model === car2.model;
+    }
+    static areSame(car1, car2) {
+        return car1.vin === car2.vin
+    }
+}
+Car.nextVin = 0;
+
+const car1 = new Car("Tesla", "S");
+const car2 = new Car("Mazda", "3");
+const car3 = new Car("Mazda", "3");
+
+console.log(car1.vin); // 0
+console.log(car2.vin); // 1
+console.log(car3.vin); // 2
+
+console.log(Car.areSimilar(car1, car2)); // false
+console.log(Car.areSimilar(car2, car3)); // true
+console.log(Car.areSame(car2, car3));    // false
+console.log(Car.areSame(car2, car2));    // true
+```
+
+### 繼承
+
+如果JavaScript無法在物件的原型中找到某個方法，它會檢查**原型的原型**。**原型鏈**就是這種方式產生。JavaScript會不斷追溯原型鏈，直到發現滿足請求的原型為止。否則會拋出錯誤。
+
+便利之處：可建立類別階層。
+
+```
+class Vehicle {
+    constructor() {
+        this.passengers = [];
+        console.log("Vehicle created");
+    }
+    addPassenger(p) {
+        this.passengers.push(p);
+    }
+}
+
+class Car extends Vehicle {
+    constructor() {
+        super();
+        console.log("Car created");
+    }
+    deployAirbags() {
+        console.log("BWOOSH!");
+    }
+}
+```
+
+`extends`關鍵字，會將`Car`標成`Vehicle`的子類別。
+
+`super()`，這是JavaScript的特殊函式，可呼叫超類別的建構式，這是子類別必用的功能，否則會看到錯誤。
+
+```
+const v = new Vehicle();
+v.addPassenger("Frank");
+v.addPassenger("Judy");
+console.log(v.passengers);
+
+const c = new Car();
+c.addPassenger("Alice");
+c.addPassenger("Cameron");
+console.log(c.passengers);
+v.deployAirbags();         // 錯誤
+c.deployAirbags();         // "BWOOSH"
+```
+
+繼承是單向的。
+
+### 多型
+
+多型是一種OO術語，它不但會將一個實例視為它的類別的成員，也會將它視為所有超類別的成員。在JavaScript中，可以在任何地方使用所有物件(但不保證有正確結果)，某種程度上，JavaScript有終極的多型。
+
+JavaScript提供`instanceof`運算子，它會告訴你某物件是不是特定類別的實例。也可能被騙，但只要你不使用`prototype`與`__proto__`，它就是可被信賴的。
+
+```
+class Motorcycle extends Vehicle {}
+const c = new Car();
+const m = new Motorcycle();
+c instanceof Car;        // true
+c instanceof Vehicle;    // true
+m instanceof Car;        // false
+m instanceof Motorcycle; // true
+m instanceof Vehicle;    // true
+```
+
+JavaScript所有物件都是根類別Object的實例。`o instanceof Object`都是`true`(除非刻意設定它的`__proto__`特性，但不應該這樣做)。它主要目的是提供所有物件都要有的重要方法，例如`toString`。
+
+### 再談枚舉物件特性
+
+JavaScript無法避免人們直接在原型中加入特性，最好還是使用`hasOwnProperty`來確定。
+
+```
+class Super {
+    constructor() {
+        this.name = 'Super';
+        this.isSuper = true;
+    }
+}
+
+// 這是有效的，但不是好方法
+Super.prototype.sneaky = 'not recommended!';
+
+class Sub extends Super {
+    constructor() {
+        super();
+        this.name = 'Sub';
+        this.isSub = true;
+    }
+}
+
+const obj = new Sub();
+
+for (let p in obj) {
+    console.log(`${p}: ${obj[p]}` + (obj.hasOwnProperty(p) ? '' : ' (inherited)'));
+}
+```
+
+特性`name`、`isSuper`與`isSub`都被定義在實例裡面，而不是原型鏈裡面。另一方面，特性`sneaky`是手動加到超類別的原型。
+
+可使用`Object.keys`來同時避免這個問題，它裡面只有被定義在原型中的特性。
+
+## 多重繼承、Mixin與介面
+
+許多語言為了避免特性碰撞問題，採用**單繼承、多介面**的辦法。
+
+JavaScript混和兩種做法。技術上，它是一種單繼承語言，因為原型鏈不會尋找多個父系，但它提供許多比多重繼承與介面還要好的方法(但有時比較不好)。
+
+多重繼承產生的問題主要是因為`mixin`概念。`mixin`代表功能一如預期地"混和(mixed in)"。因為JavaScript是型態未定(untyped)、極其寬鬆的語言，你可隨時在任何物件中混入幾乎所有功能。
+
+建立一個"可投保"的`mixin`讓汽車使用。也建立一個`InsurancePolicy`類別。可投保mixin需要方法`addInsurancePolicy`、`getInsurancePolicy`與`insInsured`。
+
+```
+class InsurancePolicy {}
+function makeInsurable(o) {
+    o.addInsurancePolicy = function(p) { this.insurancePolicy = p; }
+    o.getInsurancePolicy = function() { return this.insurancePolicy }
+    o.isInsured = function() { return !!this.insurancePolicy; }
+}
+```
+
+讓物件投保(抽象概念的汽車是不可投保的，但具體的車可以)：
+
+```
+const car1 = new Car();
+makeInsurable(car1);
+car1.addInsurancePolicy(new InsurancePolicy());
+```
+
+但這樣必須記得呼叫每一台被我們做出來的車子的`makeInsurable`。我們可以將這個呼叫式加入Car建構式，但現在我們要為每一台建立出來的車子複製這個功能。解法很簡單：
+
+```
+makeInsurable(Car.prototype);
+const car1 = new Car();
+car1.addInsurancePolicy(new InsurancePolicy());
+```
+
+現在我們的方法就好像一值都是Car類別的一部分，而且從JavaScript觀點來看，它們**的確如此**。
+
+開發者觀點看，我們可以輕鬆維護這兩個重要的類別。
+
+- 汽車工程部門管理與開發`Car`類別
+- 保險部門管理`InsurancePolicy`類別與`makeInsurable` `mixin`。
+
+`mixin`不會解決衝突的問題，如果保險部門在mixin建立shift方法，它會破壞Car。此外，也無法使用instanceof來辨識物件是否可保險：我們的最佳做法是**duck typing**(如果它有一個addInsurancePolicy方法，它一定是可保險的)。
+
+可用符號改善一些問題，所有的鍵。
+
+```
+class InsurancePolicy {}
+const ADD_POLICY = Symbol();
+const GET_POLICY = Symbol();
+const IS_INSURED = Symbol();
+const _POLICY = Symbol();
+function makeInsurable(o) {
+    o[ADD_POLICY] = function(p) { this[_POLICY] = p; }
+    o[GET_POLICY] = function() { return this[_POLICY]; }
+    o[IS_INSURED] = function() { return !!this[_POLICY]; }
+}
+```
+
+因符號是唯一的，可確保mixin永遠不會與既有的功能衝突。它用起來比較尷尬，但安全多了。
+
+比較中道的方法是：
+
+- 使用一般字串代表方法
+- 使用符號代表資料特性
