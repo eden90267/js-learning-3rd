@@ -258,3 +258,130 @@ const twoDollar = Dollar(2);
 
 ### 陣列中的函式
 
+不常用，但它的用法是漸進式的。其中一個用法是**管道**(pipeline)的概念，也就是一組被頻繁使用的獨立步驟。好處是可以隨時修改陣列，取出一個步驟或加入一個步驟。
+
+一種範例是圖形變換。建構某種視覺化的軟體，會有個變換"管道"。以下是2D變換範例：
+
+```
+const sin = Math.sin;
+const cos = Math.cos;
+const theta = Math.PI / 4;
+const zoom = 2;
+const offset = [1, -3];
+
+const pipeline = [
+    function rotate(p) {
+        return {
+            x: p.x * cos(theta) - p.y * sin(theta),
+            y: p.x * sin(theta) + p.y * cos(theta),
+        };
+    },
+    function scale(p) {
+        return { x: p.x * zoom, y: p.y * zoom };
+    },
+    function translate(p) {
+        return { x: p.x + offset[0], y: p.y + offset[1] };
+    }
+];
+
+// 現在pipeline是特定的2D變形的函式陣列
+// 現在可以變換一點
+
+const p = { x: 1, y: 1 };
+let p2 = p;
+for (let i = 0; i < pipeline.length; i++) {
+    p2 = pipeline[i](p2);
+}
+
+// 現在p2是p1繞著原點旋轉45度(pi/4弧度)，放大兩倍，並往右移1個單位，往下移3個單位
+```
+
+管道處理經常用在圖形應用程式、音訊處理以及許多科學與工程應用程式中。現實生活中，只要你有一系列的函式需要按照特定順序來執行，那管道就是很實用的抽象功能。
+
+### 將函式傳入函式
+
+函式傳入函式案例：`setTimeout`與`forEach`。將函式傳入函式另一原因，是為了管理非同步程式，這是一種越來越受歡迎的做法。要做非同步執行，常見的方式是將一個函式(callback)傳入另一個函式。當包覆回呼函式的函式完成他的工作後，回呼函式才會被呼叫。
+
+函式傳入函式不僅只限回呼，它也是一種很棒的"注入"功能的作法。
+
+1. 將陣列中所有數字加總
+2. 回傳平方的總和
+3. 三次方的總和
+
+傳遞函式就派上用場了：
+
+```
+function sum(arr, f) {
+    // 如果不提供函式，可使用一個"null函式"，
+    // 它只會回傳未修改的引數
+    if (typeof f != 'function') f = x => x;
+
+    return arr.reduce((a, x) => a+= f(x), 0);
+}
+
+sum([1, 2, 3]);                      // 6
+sum([1, 2, 3], x => x*x);            // 14
+sum([1, 2, 3], x => Math.pow(x, 3)); // 36
+```
+
+### 從函式回傳函式
+
+函式回傳函式這或許是最深奧的函式用法。但它非常好用。函式回傳函式可以想成3D印表機：它是一種可以做出某種東西(例如函式)的東西，做出來的東西也可以做出某種東西。最令人興奮的是，你可以訂製要取回來的函式。就像訂製3D印表機印出的東西一樣。
+
+考慮之前的sum，它會接收一個選用的函式來操作每一個元素，再加總它。這樣寫法並不夠好，顯然需要一個**只能**接收陣列並回傳平方和的函式(一個API可讓你提供一個sum的函式，只接受一個引數的函式)。
+
+現在將它改寫成可不斷重複使用獨立函式這個模式：
+
+```
+function newSummer(f) {
+    return arr => sum(arr, f);
+}
+```
+
+這個newSummer會建立一個全新的sum函式。它只有一個引數，但使用自訂的函式。以下為用它取得不同種類的累加器：
+
+```
+const sumOfSquares = newSummer(x => x * x);
+const sumOfCubes = newSummer(x => Math.pow(x, 3));
+sumOfSquares([1, 2, 3]); // 14
+sumOfCubes([1, 2, 3]);   // 36
+```
+
+※ 這門技術(將多引數函式轉換成只有一個引數的函式)稱為currying，源自於美國數學家發明。
+
+由函式回傳函式的應用既深奧且複雜。想看到更多範例，可查看`Express`或`Koa`(受歡迎的JavaScript Web開發框架)的中介軟體套件：中介軟體通常會是一個會回傳函式的函式。
+
+## 遞迴
+
+函式會呼叫自己。如果函式會使用逐漸縮小的輸入集合來做同一件事情時，這是一種特別強大的技術。
+
+範例：在乾草堆中找出一根針。
+
+1. 如果在乾草堆中看到針，前往第三步
+2. 從乾草堆中移除一根草。回到第一步
+3. 完成!
+
+```
+function findNeedle(haystack) {
+    if (haystack.length === 0) return "no haystack here!"; // 停止條件1
+    if (haystack.shift() === 'needle') return "found it!"; // 停止條件2
+    return findNeedle(haystack);
+}
+
+findNeedle(['hay', 'hay', 'hay', 'hay', 'needle', 'hay', 'hay']);
+```
+
+遞迴陣列有個**停止條件**，如果沒有，它會不斷遞迴執行，直到JavaScript解譯器認為呼叫堆疊過深為止(當機)。
+
+範例2：找出一個數字的階乘。數字的階乘是將一個數字乘以它之前的每一個數字，它用數字加上驚嘆號來表示。所以4!是4 X 3 X 2 X 1 = 24。
+
+```
+function fact(n) {
+    if (n === 1) return 1;  // 停止條件
+    return n * fact(n - 1);
+}
+```
+
+## 總結
+
+泛函程式語言，概念非常強大，建議多花時間去了解它們。
