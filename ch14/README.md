@@ -297,3 +297,61 @@ class Countdown extends EventEmitter {
     }
 }
 ```
+
+Countdown類別extends EventEmitter，EventEmitter讓它可以發出事件。go方法是實際啟動倒數並回傳promise的東西。
+
+go方法裡面，第一件事是將this指派給countdown。原因是我們需要使用this的值來取得countdown的長度，無論在回呼裡面會不會迷信地倒數。之前提過，this是特殊變數，它在回呼中不會有相同的值。所以我們需儲存目前this值，來在promise裡面使用。
+
+`countdown.emit('tick', i)`。所有想要監聽`tick`事件的人都可以這麼做。
+
+```
+const c = new Countdown(5);
+
+c.on('tick', function(i) {
+    if (i>0) console.log(i + '...');
+});
+
+c.go().then(function() {
+    console.log('GO!');
+})
+.catch(function(err) {
+    console.error(err.message);
+});
+```
+
+`EventEmitter`的`on`方法就是可讓你監聽事件的東西。提供一個回呼給每個ticj事件使用。
+
+現在可以完全控制在countdown中回報tick的方式，而且我們有一個promise會在倒數完成時履行。
+
+還有個工作一解決迷信的Countdown實例會經過13之後還繼續倒數的問題。就算已拒絕promise。
+
+```
+const EventEmitter = require('events').EventEmitter;
+
+class Countdown extends EventEmitter {
+    constructor(seconds, superstitious) {
+        super();
+        this.seconds = seconds;
+        this.superstitious = !!superstitious;
+    }
+    go() {
+        const countdown = this;
+        const timeoutIds = [];
+        return new Promise(function (resolve, reject) {
+            for (let i = countdown.seconds; i >= 0; i--) {
+                timeoutIds.push(setTimeout(function () {
+                    if (countdown.superstitious && i === 13) {
+                        timeoutIds.forEach(clearTimeout); // 清除所有擱置的逾時
+                        return reject(new Error("DEFINITELY NOT COUNTING THAT"));
+                    }
+                    countdown.emit('tick', i);
+                    if (i === 0) resolve();
+                }, (countdown.seconds - i) * 1000));
+            }
+        });
+    }
+}
+```
+
+### 鏈結Promise
+
