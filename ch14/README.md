@@ -174,3 +174,126 @@ readSketchyFile();
 且沒有任何保護機制來避免回呼的次數或永遠不被呼叫。
 
 此時，promise應運而生。
+
+## Promise
+
+promise目的，是為了克服回呼的一些缺點。使用promise，可寫出較安全、較容易維護的程式。
+
+promise並非取代回呼，是為了確保一定可以用某種**可預測**的方式來處理，以去除單獨使用回呼時可能遇到的意外，與難以尋找的bug。
+
+Promise基本概念很簡單：呼叫一個使用promise的非同步函式時，它會回傳一個Promise實例。那個promise只會發生兩件事：
+
+- 可被履行(成功)
+- 拒絕(失敗)
+
+可確定**只會**發生其中一件事，且結果只發生**一次**(履行 or 拒絕只會一次)。當promise被履行或被拒絕時，它就會被視為**已解決**。
+
+promise比回呼還方便的另一個地方，因為它是物件，所以可以四處傳遞。如果你想要啟動一個非同步程序，但想要讓其他人處理結果，可以將promise傳給他們(訂位呼叫器拿給朋友，餐廳不在乎訂位是誰，只要人數相同即可)。
+
+### 建立Promise
+
+只要建立一個新的Promise實例，在裡面寫一個函式，讓這函式有`resolve`(履行)與`reject`回呼即可(也就是所謂使用promise，不代表不會用到回呼)。
+
+使用countdown函式，將它參數化，並在倒數結束後，回傳一個promise。
+
+```
+function countdown(seconds) {
+    return new Promise(function (resolve, reject) {
+        for (let i = seconds; i >= 0; i--) {
+            setTimeout(function () {
+                if (i > 0) console.log(i + '...');
+                else resolve(console.log('GO!'));
+            }, (seconds - i) * 1000);
+        }
+    });
+}
+```
+
+resolve與reject是函式，可呼叫多次，但promise只承認第一次的呼叫有效，以確保使用promise的人只會被履行或拒絕一次。
+
+### 使用promise
+
+使用countdown可以直接呼叫它，忽略promise：countdown(5)。仍可取得countdown，且完全不用在promise上作文章。但如果想利用promise功能：
+
+```
+countdown(5).then(
+    function () {
+        console.log("countdown completed successfully");
+    },
+    function (err) {
+        console.log("countdown experienced an error: " + err.message);
+    }
+)
+```
+
+then處理器接收兩個回呼：
+
+- 履行回呼
+- 錯誤回呼
+
+promise也提供一種catch處理器，所以你可以拆開兩種處理器：
+
+```
+const p = countdown(5);
+p.then(function () {
+    console.log("countdown completed successfully");
+});
+p.catch(function (err) {
+    console.log("countdown experienced an error: " + err.message);
+});
+```
+
+現在對countdown函式增加錯誤條件。
+
+```
+function countdown(seconds) {
+    return new Promise(function (resolve, reject) {
+        for (let i = seconds; i >= 0; i--) {
+            setTimeout(function () {
+                if (i === 13) return reject(new Error("DEFINITELY NOT COUNTING THAT"));
+                if (i > 0) console.log(i + '...');
+                else resolve(console.log('GO!'));
+            }, (seconds - i) * 1000);
+        }
+    });
+}
+```
+
+如果從13以上開始倒數，就會在它遇到13時失敗，但...主控台紀錄仍然會出現。呼叫reject(或resolve)不會停止你的函式，只會管理promise的狀態。
+
+需要稍微改善countdown函式。
+
+目前promise沒有提供任何回報**進度**的方式。promise不是被履行，就是被拒絕，永遠不會"完成50%"。
+
+### 事件
+
+事件的概念：事件發射者會廣播事件，任何想要監聽(或訂閱)這些事件的人可以監聽。如何訂閱事件? 用回呼。
+
+Node提供內建的支援。如果要製作瀏覽器，jQuery也提供事件機制。為了改善countdown，使用EventEmitter。
+
+它的設計是在類別中使用的，所以我們將countdown函式放入Countdown類別。
+
+```
+const EventEmitter = require('events').EventEmitter;
+
+class Countdown extends EventEmitter {
+    constructor(seconds, superstitious) {
+        super();
+        this.seconds = seconds;
+        this.superstitious = !!superstitious;
+    }
+    go() {
+        const countdown = this;
+        return new Promise(function (resolve, reject) {
+            for (let i = countdown.seconds; i >= 0; i--) {
+                setTimeout(function () {
+                    if (countdown.superstitious && i === 13)
+                        return reject(new Error("DEFINITELY NOT COUNTING THAT"));
+                    countdown.emit('tick', i);
+                    if (i === 0) resolve();
+                }, (countdown.seconds - i) * 1000);
+            }
+        });
+    }
+}
+```
