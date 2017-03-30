@@ -355,3 +355,34 @@ class Countdown extends EventEmitter {
 
 ### 鏈結Promise
 
+當一個promise被履行時，它可立刻呼叫另一個會回傳promise的函式。
+
+建立一個函式，稱launch，將它鏈結至一個countdown。
+
+```
+function launch() {
+    return new Promise(function (resolve, reject) {
+        console.log('Lift off!');
+        setTimeout(function () {
+            resolve('In orbit');
+        }, 2 * 1000); // 好快的火箭
+    })
+}
+
+const c = new Countdown(5)
+// const c = new Countdown(15, true)
+    .on('tick', function (i) {
+        if (i > 0) console.log(i + '...');
+    });
+
+c.go()
+    .then(launch)
+    .then(function () {
+        console.log('GO!');
+    })
+    .catch(function (err) {
+        console.error(err.message);
+    });
+```
+
+promise鏈結有個優點，就是你不需要在每個步驟捕捉錯誤，如果在鏈結中的任何地方有錯誤，鏈結會停止。並交給catch處理器處理。如果countdown設15秒，launch永遠都不會被呼叫。

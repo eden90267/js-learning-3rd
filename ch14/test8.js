@@ -4,7 +4,7 @@ class Countdown extends EventEmitter {
     constructor(seconds, superstitious) {
         super();
         this.seconds = seconds;
-        this.superstitious = !!superstitious;
+        this.superstitious = !!superstitious; // superstitious: 迷信
     }
     go() {
         const countdown = this;
@@ -24,14 +24,23 @@ class Countdown extends EventEmitter {
     }
 }
 
-// const c = new Countdown(5);
-// superstitious: 迷信
-const c = new Countdown(15, true)
+function launch() {
+    return new Promise(function (resolve, reject) {
+        console.log('Lift off!');
+        setTimeout(function () {
+            resolve('In orbit');
+        }, 2 * 1000); // 好快的火箭
+    });
+}
+
+const c = new Countdown(5)
+// const c = new Countdown(15, true)
     .on('tick', function (i) {
         if (i > 0) console.log(i + '...');
     });
 
 c.go()
+    .then(launch)
     .then(function () {
         console.log('GO!');
     })
