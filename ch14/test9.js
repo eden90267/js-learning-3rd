@@ -26,6 +26,7 @@ class Countdown extends EventEmitter {
 
 function launch() {
     return new Promise(function (resolve, reject) {
+        if (Math.random() < 0.5) return; // 50%火箭失敗
         console.log('Lift off!');
         setTimeout(function () {
             resolve('In orbit');
@@ -33,17 +34,35 @@ function launch() {
     });
 }
 
-const c = new Countdown(5)
-    // const c = new Countdown(15, true)
+function addTimeout(fn, timeout) {
+    if (timeout === undefined) timeout = 1000;
+    return function (...args) {
+        return new Promise(function (resolve, reject) {
+            const tid = setTimeout(reject, timeout, new Error("promise timed out"));
+            fn(...args)
+                .then(function (...args) {
+                    clearTimeout(tid);
+                    resolve(...args);
+                })
+                .catch(function (...args) {
+                    clearTimeout(tid);
+                    reject(...args);
+                });
+        });
+    }
+}
+
+const c = new Countdown(10)
     .on('tick', function (i) {
         if (i > 0) console.log(i + '...');
     });
 
 c.go()
-    .then(launch)
-    .then(function () {
-        console.log('GO!');
+    // .then(launch)
+    .then(addTimeout(launch, 3 * 1000))
+    .then(function (msg) {
+        console.log(msg);
     })
     .catch(function (err) {
-        console.error(err.message);
+        console.log("Houston, we have a problem: " + err.message);
     });

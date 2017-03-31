@@ -386,3 +386,66 @@ c.go()
 ```
 
 promise鏈結有個優點，就是你不需要在每個步驟捕捉錯誤，如果在鏈結中的任何地方有錯誤，鏈結會停止。並交給catch處理器處理。如果countdown設15秒，launch永遠都不會被呼叫。
+
+### 防止不會執行的Promise
+
+promise可以簡化你的非同步程式，並預防回呼被呼叫超過一次的問題，但它們無法讓你避免promise永遠無法執行的問題(忘記呼叫resolve或reject)。
+
+避免方式之一，是為promise指定一個逾時，如果promise在一段合理的時間之內沒有執行，就自動拒絕它。
+
+為launch插入一個人工的失敗：
+
+```
+function launch() {
+    return new Promise(function (resolve, reject) {
+        if (Math.random() < 0.5) return; // 50%火箭失敗
+        console.log('Lift off!');
+        setTimeout(function () {
+            resolve('In orbit');
+        }, 2 * 1000);
+    });
+}
+```
+
+失敗的方式：沒有呼叫reject，甚不會將所有東西都log到主控台，只在一半的時間內，默默失敗。這樣是不可取的作法。
+
+可以編寫一個函式，來將逾時指派給promise：
+
+```
+function addTimeout(fn, timeout) {
+    if (timeout === undefined) timeout = 1000;
+    return function (...args) {
+        return new Promise(function (resolve, reject) {
+            const tid = setTimeout(reject, timeout, new Error("promise timed out"));
+            fn(...args)
+                .then(function (...args) {
+                    clearTimeout(tid);
+                    resolve(...args);
+                })
+                .catch(function (...args) {
+                    clearTimeout(tid);
+                    reject(...args);
+                });
+        });
+    }
+}
+```
+
+```
+const c = new Countdown(10)
+    .on('tick', function (i) {
+        if (i > 0) console.log(i + '...');
+    });
+
+c.go()
+    // .then(launch)
+    .then(addTimeout(launch, 3 * 1000))
+    .then(function (msg) {
+        console.log(msg);
+    })
+    .catch(function (err) {
+        console.log("Houston, we have a problem: " + err.message);
+    });
+```
+
+現在我們的promise鏈結永遠都會執行，就算launch函式表現不好也是如此。
