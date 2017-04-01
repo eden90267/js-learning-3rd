@@ -59,7 +59,7 @@ const c = new Countdown(10)
 
 c.go()
     // .then(launch)
-    .then(addTimeout(launch, 3 * 1000))
+    .then(addTimeout(launch, 4 * 1000))
     .then(function (msg) {
         console.log(msg);
     })

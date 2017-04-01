@@ -439,7 +439,7 @@ const c = new Countdown(10)
 
 c.go()
     // .then(launch)
-    .then(addTimeout(launch, 3 * 1000))
+    .then(addTimeout(launch, 4 * 1000))
     .then(function (msg) {
         console.log(msg);
     })
@@ -449,3 +449,139 @@ c.go()
 ```
 
 現在我們的promise鏈結永遠都會執行，就算launch函式表現不好也是如此。
+
+## 產生器
+
+產生器可讓函式與呼叫方進行雙向溝通。產生器的性質是同步的，但當它與promise一起使用，可提供強大的JavaScript非同步程式處理技術。
+
+之前“回呼地獄”的範例：讀取三個檔案，延遲一分鐘，接著將前三個檔案的內容寫入第四個檔案。以下是人類頭腦喜歡的虛擬碼：
+
+```
+dataA = read contents of 'a.txt'
+dataB = read contents of 'b.txt'
+dataC = read contents of 'c.txt'
+wait 60 seconds
+write dataA + dataB + dataC to 'd.txt'
+```
+
+產生器可以寫出像它的程式...但必須做些前置作業。
+
+第一件事，將Node錯誤優先回呼轉成promise。將它封裝到一個稱為`nfcall`的函式裡面(Node函式呼叫)：
+
+```
+function nfcall(f, ...args) {
+    return new Promise(function (resolve, reject) {
+        f.call(null, ...args, function (err, ...args) {
+            if (err) return reject(err);
+            resolve(args.length < 2 ? args[0] : args)
+        });
+    });
+}
+```
+
+※ 根據`Q promise`程式庫的`nfcall`方法
+
+現在可以將Node風格的方法轉換成promise了。我們也需要setTimeout，它會接收一個回呼，因為它比Node早出現，並未遵循錯誤優先慣例。所以，現來建立ptimeout(promise timeout)：
+
+```
+function ptimeout(delay) {
+    return new Promise(function (resolve, reject) {
+        setTimeout(resolve, delay);
+    });
+}
+```
+
+接著需要**產生器執行器**(generator runner)。可建立一個函式來管理那個函式與呼叫方通訊。暸解如何處理非同步呼叫：
+
+```
+function grun(g) {
+    const it = g();
+    (function iterate(val){
+        const x = it.next(val);
+        if (!x.done) {
+            if (x.value instanceof Promise) {
+                x.value.then(iterate).catch(err => it.throw(err));
+            } else {
+                setTimeout(iterate, 0, x.value);
+            }
+        }
+    })();
+}
+```
+
+這是一個遞迴產生器執行器。你將一個產生器函式傳給它，它就會執行它。如果迭代器回傳promise，它會等待promise被履行，再恢復執行迭代器。另一方面，如果迭代器回傳一個簡單的值，它會立刻恢復執行迭代。呼叫setTimeout是避免使用同步遞迴來讓效能好一點。
+
+grun讓我們預先使用未來的功能(ES7 await關鍵字，像grun函式，但使用更自然的語法)。
+
+```
+function* theFutureIsNow() {
+    const dataA = yield nfcall(fs.readFile, 'a.txt');
+    const dataB = yield nfcall(fs.readFile, 'b.txt');
+    const dataC = yield nfcall(fs.readFile, 'c.txt');
+    yield ptimeout(60*1000);
+    yield nfcall(fs.writeFile, 'd.txt', dataA + dataB + dataC);
+}
+```
+
+看起來比回呼地獄好多了，也比單獨存在的promise簡潔。它會按我們想像的流程進行。執行它很簡單：
+
+```
+grun(theFutureIsNow);
+```
+
+### 走一步，退兩步
+
+讀取三個檔案的順序是無關緊要的。以平行的方式讀取這三個檔案，同時發生，將會提升效率。
+
+Promise提供一種方法，稱為all，它會在陣列的所有promise都履行時履行...可能的話，它可以平行執行非同步程式。
+
+```
+function* theFutureIsNow() {
+    const data = yield Promise.all([
+        nfcall(fs.readFile, 'a.txt'),
+        nfcall(fs.readFile, 'b.txt'),
+        nfcall(fs.readFile, 'c.txt'),
+    ]);
+    yield ptimeout(60*1000);
+    yield nfcall(fs.writeFile, 'd.txt', data[0] + data[1] + data[2]);
+}
+```
+
+`Promise.all`回傳的promise提供一個陣列，裡面有每個promise的完成值，按照它們出現在陣列內的順序。
+
+考慮程式哪些部分可以平行執行，哪些部分不行。可平行的將可移入`Promise.all`。
+
+### 不要編寫你自己的產生器執行器
+
+[co產生器執行器](https://github.com/tj/co)
+
+若要建構網站，可研究[Koa](http://koajs.com/)，它的設計是與`co`一起使用，可讓你用`yield`來編寫`web`處理器，如同用`theFutureIsNow`的做法。
+
+### 產生器執行器的例外處理
+
+產生器執行器的另外重要優點，就是它們可讓你用`try/catch`來處理例外。之前提過，回呼與promise在處理例外是有問題的，回呼內丟出的例外，無法被回呼外的東西捕捉。產生器執行器可在使用同步語義的同時保留非同步執行，所以在`try/catch`有額外的好處。
+
+```
+function* theFutureIsNow() {
+    let data;
+    try {
+        data = yield Promise.all([
+            nfcall(fs.readFile, 'a.txt'),
+            nfcall(fs.readFile, 'b.txt'),
+            nfcall(fs.readFile, 'c.txt'),
+        ]);
+    } catch (err) {
+        console.log("unable to read one or more input files: " + err.message);
+        throw err;
+    }
+    yield ptimeout(60 * 1000);
+    try {
+        yield nfcall(fs.writeFile, 'd.txt', data[0] + data[1] + data[2]);
+    } catch (err) {
+        console.log("unable to write output file: " + err.message);
+        throw err;
+    }
+}
+```
+
+它是容易理解的例外處理機制。
