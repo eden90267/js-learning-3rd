@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,14 +12,21 @@
             margin: 2px 4px;
             padding: 2px 6px;
         }
+        
         .code {
             background: #ccc;
             margin: 1px 2px;
             padding: 1px 4px;
             font-family: monospace;
         }
+        
+        .highlight {
+            background: #ff0;
+            font-style: italic;
+        }
     </style>
 </head>
+
 <body>
     <header>
         <h1>Simple HTML</h1>
@@ -33,6 +41,14 @@
         <div id="callout2" class="callout fancy">
             <p>A single HTML element can have multiple classes.</p>
         </div>
+        <div>
+            <button data-action="highlight" data-containing="unique">
+                Highlight paragraphs containing "unique"
+            </button>
+            <button data-action="removeHighlights">
+                Remove highlights
+            </button>
+        </div>
     </div>
     <script>
         function printDOM(node, prefix) {
@@ -42,6 +58,46 @@
             }
         }
         printDOM(document, '');
+
+        function highlightParas(containing) {
+            if (typeof containing === 'string')
+                containing = new RegExp(`\\b${containing}\\b`, 'i');
+            const paras = document.getElementsByTagName('p');
+            console.log(paras);
+            for (let p of paras) {
+                if (!containing.test(p.textContent)) continue;
+                p.classList.add('highlight');
+            }
+        }
+        // highlightParas('unique');
+
+        function removeParaHighlights() {
+            const paras = document.querySelectorAll('p.highlight');
+            for (let p of paras) {
+                p.classList.remove('highlight');
+            }
+        }
+
+        const highlightActions = document.querySelectorAll('[data-action=highlight]');
+        // console.log(highlightActions[0].dataset); // DOMStringMap {action: "highlight", containing: "unique"}
+        // highlightActions[0].dataset.containing = "giraffe";
+        // highlightActions[0].dataset.caseSensitive = "true";
+        for (let a of highlightActions) {
+            a.addEventListener('click', evt => {
+                evt.preventDefault();
+                highlightParas(a.dataset.containing);
+            });
+        }
+
+        const removeHighlightActions =
+            document.querySelectorAll('[data-action=removeHighlights]');
+        for (let a of removeHighlightActions) {
+            a.addEventListener('click', evt => {
+                evt.preventDefault();
+                removeParaHighlights();
+            })
+        }
     </script>
 </body>
+
 </html>

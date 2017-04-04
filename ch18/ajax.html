@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Ajax Client</title>
+</head>
+
+<body>
+    <div class="serverInfo">
+        Server is running on <span data-replace="platform">???</span> With Node <span data-replace="nodeVersion">???</span>.
+        It has been up for <span data-replace="uptime">???</span> seconds.
+    </div>
+    <script>
+        function refreshServerInfo() {
+            const req = new XMLHttpRequest();
+            req.addEventListener('load', function() { // load：ajax呼叫成功，會呼叫的東西
+                const data = JSON.parse(this.responseText);
+
+                const serverInfo = document.querySelector('.serverInfo');
+
+                Object.keys(data).forEach(p => {
+                   const replacements = serverInfo.querySelectorAll(`[data-replace="${p}"]`);
+                   for(let r of replacements) {
+                       r.textContent = data[p];
+                   }
+                });
+            });
+            req.open('GET', 'http://127.0.0.1:7070', true);
+            req.send(); // 會實際執行請求
+
+        }
+        refreshServerInfo();
+        // setInterval(refreshServerInfo(), 200);
+    </script>
+</body>
+
+</html>
