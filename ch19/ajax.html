@@ -24,18 +24,15 @@
                     });
                 },
                 function(jqXHR, textStatus, err) {
-                    console.error(err);
-                    $serverInfo
-                        .addClass('error')
-                        .html('Error connecting to server.');
+                    console.err(err);
+                    $serverInfo.addClass('error').html('Error connecting to server');
                 }
-            );
+            )
         }
-
         $(function() {
             refreshServerInfo();
             // setInterval(refreshServerInfo(), 200);
-        });
+        });  
     </script>
 </body>
 

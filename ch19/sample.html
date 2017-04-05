@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Simple HTML</title>
+    <style>
+        .callout {
+            border: solid 1px #ff0080;
+            margin: 2px 4px;
+            padding: 2px 6px;
+        }
+        
+        .code {
+            background: #ccc;
+            margin: 1px 2px;
+            padding: 1px 4px;
+            font-family: monospace;
+        }
+        
+        .highlight {
+            background: #ff0;
+            font-style: italic;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Simple HTML</h1>
+    </header>
+    <div class="content">
+        <p>This is a <i>simple</i> HTML file.</p>
+        <div class="callout">
+            <p>This is as fancy as we'll get!'</p>
+        </div>
+        <p>IDs (such as <span class="code">#content</span>) are unique (there can only be one per page).</p>
+        <p>Classes (such as <span class="code">.callout</span>) can be used on many elements.</p>
+        <div id="callout2" class="callout fancy">
+            <p>A single HTML element can have multiple classes.</p>
+        </div>
+    </div>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
+	<script type="text/javascript">
+		// $('p').text('ALL PARAGRAPHS REPLACED');
+
+		// $('p')     // 匹配所有段落
+        //     .eq(2) // 第三段
+        //     .html('<i>THIRD</i> PARAGRAPH REPLACED');
+
+        // $('p').remove();
+
+        // $('p')
+        //     .append('<sup>*</sup>');
+
+        // $('p')
+        //     .after('<hr>')
+        //     .before('<hr>');
+
+        // $('<sup>*</sup>').appendTo('p'); // 相當$('p').append('<sup>*</sup>')
+        // $('<hr>').insertBefore('p');     // 相當$('p').before('<hr>')
+        // $('<hr>').insertAfter('p');      // 相當$('p').after('<hr>')
+
+        // $('p')
+        //     .after('<hr>')
+        //     .append('<sup>*</sup>')
+        //     .filter(':odd')
+        //     .css('color', 'red');
+
+        // $('p')
+        //     .after('<hr>')
+        //     .not('.highlight')
+        //     .css('margin-left', '20px');
+
+        // $('p')
+        //     .before('<hr>')
+        //     .find('.code')
+        //     .css('font-size', '30px');
+
+        const para2 = $('p').get(1);
+
+        const paras = $('p').get();
+	</script>
+</body>
+
+</html>
