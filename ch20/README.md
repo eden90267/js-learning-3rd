@@ -393,4 +393,248 @@ fs.readdir('data', function(err, files) {
 });
 ```
 
-process物件
+process物件也可讓你存取要傳給程式的陣列，這個陣列含有**指令列引數**。當你執行Node應用程式時，可視情況提供指令列引數。
+
+寫一個程式，讓它以指令列引數的方式來接收許多檔名，並印出每一個檔案的文字行數：
+
+```
+$ node linecount.js file1.txt file2.txt file3.txt
+```
+
+指令列的引數在`process.argv`陣列裡面。
+
+```
+console.log(process.argv);
+```
+
+```
+$ node linecount file1.txt file2.txt file3.txt
+[ '/usr/local/bin/node',
+  '/Users/eden90267/Desktop/js-learning-3rd/ch20/linecount',
+  'file1.txt',
+  'file2.txt',
+  'file3.txt' ]
+```
+
+1. 第一個元素：解譯器，或解譯來源檔案的程式
+2. 第二個元素：執行指令碼的完整路徑
+3. 其餘元素：傳給程式的所有引數
+
+```
+const fs = require('fs');
+
+const filenames = process.argv.slice(2);
+
+let counts = filenames.map(f => {
+    try {
+        const data = fs.readFileSync(f, { encoding: 'utf8' });
+        return `${f}: ${data.split('\n').length}`;
+    } catch (err) {
+        return `${f}: couldn't read file`;
+    }
+});
+
+console.log(counts.join('\n'));
+```
+
+process也可透過`process.env`物件來存取環境變數。環境變數是有名稱的系統變數，主要用於指令列程式。
+
+- Unix：`export VAR_NAME=some value`
+- Windows：`set VAR_NAME=some value`
+
+環境變數通常會被用來設定程式的某些行為(所以不需要在每次執行程式時，都得在指令列上提供一些值)
+
+例如，想要使用環境變數來控制程式究竟要log除錯資訊，或“默默地執行”。我們用環境變數DEBUG來控制除錯行為，如果我們想要除錯，就將它設為1：
+
+```
+const debug = process.env.DEBUG === "1" ?
+    console.log :
+    function () { };
+
+debug("Visible only if environment variable DEBUG is set!");
+```
+
+`process.cwd`會告訴你目前的工作目錄在哪裡，可以用`process.chdir`改變它。
+
+```
+console.log(`Current directory: ${process.cwd()}`);
+process.chdir(__dirname);
+console.log(`New current directory: ${process.cwd()}`);
+```
+
+## 作業系統
+
+os模組可提供運行app的電腦平台資訊。以下是最實用的os資訊：
+
+```
+const os = require('os');
+
+console.log("Hostname: " + os.hostname());                                // Eden-MBP
+console.log("OS type: " + os.type());                                     // Darwin
+console.log("OS platform: " + os.platform());                             // darwin
+console.log("OS release: " + os.release());                               // 16.5.0
+console.log('OS uptime: ' + (os.uptime()/60/60/24).toFixed(1) + " days"); // 0.0 days
+console.log('CPU architecture: ' + os.arch());                            // x64
+console.log('Number of CPUs: ' + os.cpus().length);                       // 8
+console.log('Total memory: ' + (os.totalmem()/1e6).toFixed(1) + ' MB');   // 8589.9 MB
+console.log('Free memory: ' + (os.freemem()/1e6).toFixed(1) + ' MB');     // 1055.8 MB
+```
+
+## 子處理序
+
+`child_process`模組可讓你的app執行其他的程式，包括其他的Node程式、可執行檔、或其他語言的指令碼。
+
+`child_process`公開三個主要的函式：`exec`、`execFile`與`fork`。也有同步版本(`execSync`、`execFileSync`與`forkSync`)。
+
+`exec`、`execFile`可執行你的作業系統所提供的所有可執行檔。
+
+- `exec`會呼叫一個殼層(它是作業系統指令列的基礎，如果你可以從指令列執行它，就可以從`exec`執行它)
+- `execFile`可讓你直接執行可執行檔，它提供略有改進的記憶體與資源使用方式，但通常需加倍小心。
+- `fork`可讓你執行其他的Node指令碼(也可用`exec`來做)
+
+
+※ `fork`會呼叫獨立的Node引擎，所以你付出的資源代價與使用`exec`一樣；但，`fork`可讓你進行一些處理序之間的通訊項目。
+
+執行指令`dir`，它會顯示目錄列表(Unix user比較習慣`ls`，大部分Unix系統，dir是ls的別名)：
+
+```
+const exec = require('child_process').exec;
+
+exec('ls', function(err, stdout, stderr) {
+    if (err) return console.error('Error executing "ls"');
+    stdout = stdout.toString(); // 將Buffer轉成字串
+    console.log(stdout);
+    stderr = stderr.toString();
+    if (stderr !== '') {
+        console.error('error:');
+        console.error(stderr);
+    }
+});
+```
+
+exec會滋生一個殼層，所以我們不需提供dir執行檔的所在路徑。如果無法從系統的殼層執行，就需要提供執行檔的完整路徑。
+
+被呼叫的回呼會從`stdout`(程式的正常輸出)與`stderr`(錯誤輸出，有的話)接收兩個Buffer物件。
+
+exec會接收一個選用的options物件，可讓我們指定工作目錄、環境變數等東西。可看官方文件。
+
+## 串流
+
+**串流**是Node一個很重要的概念。串流是一種以串流的形式處理資料的物件。(串流(stream)會讓你想到流(flow)，因為流是一種與時間有關的東西，所以可合理將它視為非同步)。
+
+串流可能是**讀取串流**、**寫入串流**或兩者(**雙向串流**)。當資料流會在一段時間內發生時，就是適合使用串流的時機。
+
+- 使用者在鍵盤上打字
+- web服務與用戶端來回通訊
+- 檔案的存取(雖也可以不使用串流來讀取與寫入檔案)
+
+以下使用檔案串流來展示如何建立讀取與寫入串流，及如何將串流**接管**：
+
+建立一個寫入串流，並寫入它：
+
+```
+const fs = require('fs');
+const ws = fs.createWriteStream('stream.txt', {encoding: 'utf8'});
+ws.write('line 1\n');
+ws.write('line 2\n');
+ws.end();             // 可選擇接收一個資料引數，它相當於呼叫write。
+                      // 如果只傳送一次資料，可直接呼叫end，並使用你想傳送的資料。
+```
+
+在呼叫`end`之前，我們的寫入串流(ws)可用`write`寫入，呼叫`end`時，串流會被關閉，如果之後再呼叫`write`，將會產生錯誤。
+
+所以寫入串流，很適合在一段時間之內寫入資料。
+
+同樣，可建立一個讀取串流，在資料到達時讀取它：
+
+```
+const fs = require('fs');
+const rs = fs.createReadStream('stream.txt', {encoding: 'utf8'});
+rs.on('data', function(data) {
+    console.log('>> data: ' + data.replace('\n', '\\n'));
+});
+rs.on('end', function(data) {
+    console.log('>> end');
+})
+```
+
+雙向串流不常見。你可呼叫`write`來將資料寫入雙向串流，以及監聽`data`與`end`事件。
+
+資料會“流”經串流，可以將流出讀取串流的資料立刻寫至寫入串流。這個程序稱為**接管**(piping)。
+
+```
+const fs = require('fs');
+const rs = fs.createReadStream('stream.txt');
+const ws = fs.createWriteStream('stream_copy.txt');
+rs.pipe(ws);
+```
+
+我們不需指定編碼：rs只是從stream.txt將bytes接管到ws，編碼在解譯資料才會用到。
+
+接管是常見的資料移動技術。例如，你可將檔案的內容接管到web伺服器的回應。或者將壓縮過的資料接管到解壓縮引擎，接著由它將資料接管至檔案寫入程式。
+
+## Web 伺服器
+
+Node原本的目的，是為了提供web伺服器使用。
+
+用Node來建立可運行的web伺服器很簡單。http模組(與它的安全版本，https模組)公開了一種`createServer`方法，可用來建立基本的web伺服器。你只要提供一個回呼函式來處理被傳入的請求即可。要啟動伺服器，只要呼叫它的`listen`方法，並且給它一個連接埠。
+
+```
+const http = require('http');
+
+const server = http.createServer(function(req, res){
+    console.log(`${req.method} ${req.url}`);
+    res.end('Hello world!');
+});
+
+const port = 8080;
+server.listen(port, function() {
+    // 可傳遞一個回呼來監聽
+    // 可讓你知道伺服器已經啟動的東西
+    console.log(`server started on port ${port}`);
+})
+```
+
+※ 基於安全原因，大部分OS都不允許你在沒有權限的情況下監聽預設的HTTP埠(80)。須取得較高權限，才可監聽低於1024的所有連接埠。當然，取得權限很簡單，可使用sudo來執行伺服器來取得較高權限，並監聽80埠。
+
+Node web伺服器核心，就是你提供的回呼函式，它會回應所有進來的請求。它會接收兩個引數：
+
+- IncomingRequest(通常縮寫req)
+- ServerResponse(res)
+
+IncomingRequest物件含有關於HTTP請求的所有資訊：
+
+- 哪個URL被請求
+- 被傳送的所有標頭
+- 被傳入內文的任何資料
+- 其他
+
+ServerResponse物件含有一些特性與方法，可控制即將回傳給用戶端的回應。
+
+ServerResponse物件有可寫入的串流介面，可用它來將資料寫至用戶端。可直接建立一個檔案讀取串流，並將它接管至HTTP回應。
+
+例如：如果有一個favicon.ico檔案可讓網站更好用，可以偵測這個請求，並直接傳送這個檔案：
+
+```
+const http = require('http');
+
+const server = http.createServer(function(req, res) {
+    if (req.method === 'GET' && req.url === '/favicon.ico') {
+        const fs = require('fs');
+        fs.createReadStream('favicon.ico');
+        fs.pipe(res);       // 這會取代呼叫'end'
+    } else {
+        console.log(`${req.method} ${req.url}`);
+        res.end('Hello world!');
+    }
+});
+
+const port = 8080;
+server.listen(port, function() {
+    console.log(`server started on port ${port}`);
+})
+```
+
+使用IncomingRequest裡面的資訊，你可以擴充這個模組，建立你想要的任何網站類型。
+
+如果使用Node提供網站，或許可使用一些框架來避免從頭開始建立web伺服器的麻煩，例如`Express`與`Koa`。
