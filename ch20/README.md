@@ -116,8 +116,8 @@ mnodules有三種：
 
 模組型態：
 
-| 型態 | 傳給require的字串                    | 範例                                                                                                    |
-|------|--------------------------------------|---------------------------------------------------------------------------------------------------------|
-| 核心 | 不是以/、./或../開頭的               | require('fs')   require('os')   require('http')   require(child_process)                                |
-| 檔案 | 以/、./或../開頭的                   | require('./debug.js')   require('/full/path/to/module.js')   require('../a.js')   require('../../a.js') |
-| npm  | 不是核心模組，且不是/、./或../開頭的 | require('debug')   require('express')   require('chalk')   require('koa')   require('q')                |
+| 型態 | 傳給require的字串                    | 範例                                                                                                 |
+|------|--------------------------------------|------------------------------------------------------------------------------------------------------|
+| 核心 | 不是以/、./或../開頭的               | require('fs')；require('os')；require('http')；require(child_process)                                |
+| 檔案 | 以/、./或../開頭的                   | require('./debug.js')；require('/full/path/to/module.js')；require('../a.js')；require('../../a.js') |
+| npm  | 不是核心模組，且不是/、./或../開頭的 | require('debug')；require('express')；require('chalk')；require('koa')；require('q')                 |
