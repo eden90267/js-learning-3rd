@@ -22,7 +22,7 @@ JavaScript物件是一種**容器**(也稱**聚合**(aggregate)或**複合資料
 
 傳統的物件特性枚舉方式，是使用`for...in`。
 
-```
+```javascript
 const SYM = Symbol();
 
 const o = { a: 1, b: 2, c: 3, [SYM]: 4 };
@@ -43,7 +43,7 @@ for (let prop in o) {
 
 `Object.keys`可產生一個陣列，它裡面枚舉物件的所有字串特性：
 
-```
+```javascript
 const SYM = Symbol();
 const o = { a: 1, b: 2, c: 3, [SYM]: 4 };
 Object.keys(o).forEach(prop => console.log(`${prop}: ${o[prop]}`));
@@ -53,7 +53,7 @@ Object.keys(o).forEach(prop => console.log(`${prop}: ${o[prop]}`));
 
 例如可輕鬆地列出所有以字母x開頭的物件特性：
 
-```
+```javascript
 const o = { apple: 1, xochitl: 2, balloon: 3, guitar: 4, xylophone: 5 };
 Object.keys(o)
   .filter(prop => prop.match(/^x/))
@@ -86,7 +86,7 @@ OOP也提供一個以**階層**來分類類別的框架。例如，可建立一�
 
 ES6之前，JavaScript建立類別是一種模糊、難懂的工作。ES6加入方便的類別建立語法：
 
-```
+```javascript
 class Car {
   constructor() {
   }
@@ -95,19 +95,19 @@ class Car {
 
 建立具體的車子，需使用`new`關鍵字：
 
-```
+```javascript
 const car1 = new Car();
 const car2 = new Car();
 ```
 
 `instanceof`運算子，可以告訴你某個物件是不是屬於某類別的實例：
 
-```
+```javascript
 car1 instanceof Car    // true
 car2 instanceof Array  // false
 ```
 
-```
+```javascript
 class Car {
   constructor(make, model) {
     this.make = make;
@@ -125,7 +125,7 @@ class Car {
 
 `this`：參考被呼叫的方法所屬的實例。可想成一個**預留項目**：當你編寫一個類別(抽象)，`this`關鍵字是**特定**實例的預留符號，當方法被呼叫時，它的身份就可以確定。
 
-```
+```javascript
 const car1 = new Car("Tesla", "Model S");
 const car2 = new Car("Mazda", "3i");
 car1.shift('D');
@@ -141,7 +141,7 @@ car2.userGear; // "R"
 
 **動態特性**可減緩這種弱點。可讓特性具有方法的功能。
 
-```
+```javascript
 class Car {
     constructor() {
         this.make = make;
@@ -169,7 +169,7 @@ class Car {
 
 如果真的需要強制私用，可使用以範圍來保護的`WeakMap`實例。
 
-```
+```javascript
 const Car = (function () {
     
     const carProps = new WeakMap();
@@ -208,7 +208,7 @@ const Car = (function () {
 
 類別其實是一種函式。ES5可這樣製作Car：
 
-```
+```javascript
 function Car(make, model) {
   this.make = make;
   this.model = model;
@@ -219,7 +219,7 @@ function Car(make, model) {
 
 確認`class`是糖衣語法：
 
-```
+```javascript
 class Es6Car {}
 function Es5Car() {}
 typeof Es6Car; // "function"
@@ -230,7 +230,7 @@ typeof Es5Car; // "function"
 
 當你參考類別的實例方法時，你參考的其實是**原型**(prototype)方法。
 
-```
+```javascript
 Car.prototype.shift;
 Array.prototype.forEach;
 ```
@@ -249,7 +249,7 @@ Array.prototype.forEach;
 
 注意，在實例中定義方法或特性，將會改寫原型的版本。JavaScript先檢查實例再原型。
 
-```
+```javascript
 const car1 = new Car();
 const car2 = new Car();
 
@@ -274,7 +274,7 @@ car1.userGear;                      // 'D'
 
 用來執行與整個類別有關的工作。
 
-```
+```javascript
 class Car {
     static getNextVin() {
         return Car.nextVin++;
@@ -315,7 +315,7 @@ console.log(Car.areSame(car2, car2));    // true
 
 便利之處：可建立類別階層。
 
-```
+```javascript
 class Vehicle {
     constructor() {
         this.passengers = [];
@@ -341,7 +341,7 @@ class Car extends Vehicle {
 
 `super()`，這是JavaScript的特殊函式，可呼叫超類別的建構式，這是子類別必用的功能，否則會看到錯誤。
 
-```
+```javascript
 const v = new Vehicle();
 v.addPassenger("Frank");
 v.addPassenger("Judy");
@@ -363,7 +363,7 @@ c.deployAirbags();         // "BWOOSH"
 
 JavaScript提供`instanceof`運算子，它會告訴你某物件是不是特定類別的實例。也可能被騙，但只要你不使用`prototype`與`__proto__`，它就是可被信賴的。
 
-```
+```javascript
 class Motorcycle extends Vehicle {}
 const c = new Car();
 const m = new Motorcycle();
@@ -380,7 +380,7 @@ JavaScript所有物件都是根類別Object的實例。`o instanceof Object`都�
 
 JavaScript無法避免人們直接在原型中加入特性，最好還是使用`hasOwnProperty`來確定。
 
-```
+```javascript
 class Super {
     constructor() {
         this.name = 'Super';
@@ -420,7 +420,7 @@ JavaScript混和兩種做法。技術上，它是一種單繼承語言，因為�
 
 建立一個"可投保"的`mixin`讓汽車使用。也建立一個`InsurancePolicy`類別。可投保mixin需要方法`addInsurancePolicy`、`getInsurancePolicy`與`insInsured`。
 
-```
+```javascript
 class InsurancePolicy {}
 function makeInsurable(o) {
     o.addInsurancePolicy = function(p) { this.insurancePolicy = p; }
@@ -431,7 +431,7 @@ function makeInsurable(o) {
 
 讓物件投保(抽象概念的汽車是不可投保的，但具體的車可以)：
 
-```
+```javascript
 const car1 = new Car();
 makeInsurable(car1);
 car1.addInsurancePolicy(new InsurancePolicy());
@@ -439,7 +439,7 @@ car1.addInsurancePolicy(new InsurancePolicy());
 
 但這樣必須記得呼叫每一台被我們做出來的車子的`makeInsurable`。我們可以將這個呼叫式加入Car建構式，但現在我們要為每一台建立出來的車子複製這個功能。解法很簡單：
 
-```
+```javascript
 makeInsurable(Car.prototype);
 const car1 = new Car();
 car1.addInsurancePolicy(new InsurancePolicy());
@@ -456,7 +456,7 @@ car1.addInsurancePolicy(new InsurancePolicy());
 
 可用符號改善一些問題，所有的鍵。
 
-```
+```javascript
 class InsurancePolicy {}
 const ADD_POLICY = Symbol();
 const GET_POLICY = Symbol();
